@@ -1,129 +1,61 @@
-import os
-from datetime import datetime, time
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#06111f" />
+    <title>Diamond Club Session Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero glass-card">
+        <div class="hero-glow"></div>
+        <img class="club-logo" src="/static/diamond-club-logo.png?v=3" alt="The Diamond Club logo" />
+        <div class="hero-copy compact">
+          <p class="eyebrow">Premium Trading Dashboard</p>
+          <p class="subtitle">Session clocks · UK/NY time · live market movement</p>
+        </div>
+      </section>
 
-import pytz
-from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template
+      <section class="clock-grid glass-card">
+        <div class="section-title">
+          <span>◷</span>
+          <h2>Session Clocks</h2>
+        </div>
+        <div id="session-cards" class="session-cards"></div>
+      </section>
 
-from market_data import get_market_snapshot
+      <section class="time-panel glass-card">
+        <div>
+          <p class="panel-label">UK Time</p>
+          <strong id="uk-time">--:--:--</strong>
+          <span id="uk-date">Loading…</span>
+          <em id="uk-zone">UK</em>
+        </div>
+        <div>
+          <p class="panel-label">New York Time</p>
+          <strong id="ny-time">--:--:--</strong>
+          <span id="ny-date">Loading…</span>
+          <em id="ny-zone">ET</em>
+        </div>
+      </section>
 
-load_dotenv()
+      <section class="market-panel glass-card">
+        <div class="market-header">
+          <div class="section-title no-margin">
+            <span>▥</span>
+            <h2>Market Update</h2>
+          </div>
+          <div class="live-dot"><span></span> Live</div>
+        </div>
+        <p id="data-warning" class="data-warning hidden"></p>
+        <div id="market-list" class="market-list"></div>
+        <footer id="data-footer">Powered by Vantage Markets data or similar</footer>
+      </section>
+    </main>
 
-app = Flask(__name__)
-
-SESSION_CONFIG = [
-    {
-        "name": "Sydney",
-        "tz": "Australia/Sydney",
-        "open": "08:00",
-        "close": "17:00",
-        "city": "Sydney",
-    },
-    {
-        "name": "Tokyo",
-        "tz": "Asia/Tokyo",
-        "open": "09:00",
-        "close": "18:00",
-        "city": "Tokyo",
-    },
-    {
-        "name": "London",
-        "tz": "Europe/London",
-        "open": "08:00",
-        "close": "17:00",
-        "city": "London",
-    },
-    {
-        "name": "New York",
-        "tz": "America/New_York",
-        "open": "08:00",
-        "close": "17:00",
-        "city": "New York",
-    },
-]
-
-
-def parse_hhmm(value):
-    h, m = value.split(":")
-    return time(int(h), int(m))
-
-
-def is_session_open(local_now, open_str, close_str):
-    open_t = parse_hhmm(open_str)
-    close_t = parse_hhmm(close_str)
-    current = local_now.time()
-
-    # Weekends: market sessions should display closed.
-    if local_now.weekday() >= 5:
-        return False
-
-    if open_t <= close_t:
-        return open_t <= current < close_t
-    return current >= open_t or current < close_t
-
-
-def session_payload():
-    now_utc = datetime.now(pytz.utc)
-    sessions = []
-
-    for item in SESSION_CONFIG:
-        zone = pytz.timezone(item["tz"])
-        local_now = now_utc.astimezone(zone)
-        sessions.append(
-            {
-                "name": item["name"],
-                "city": item["city"],
-                "timezone": item["tz"],
-                "abbr": local_now.tzname(),
-                "openTime": item["open"],
-                "closeTime": item["close"],
-                "isOpen": is_session_open(local_now, item["open"], item["close"]),
-                "localTime": local_now.strftime("%H:%M:%S"),
-            }
-        )
-
-    london = now_utc.astimezone(pytz.timezone("Europe/London"))
-    new_york = now_utc.astimezone(pytz.timezone("America/New_York"))
-
-    return {
-        "generatedAtUtc": now_utc.isoformat(),
-        "uk": {
-            "time": london.strftime("%H:%M:%S"),
-            "date": london.strftime("%A, %d %B %Y"),
-            "abbr": london.tzname(),
-            "offset": london.strftime("UTC%z"),
-        },
-        "newYork": {
-            "time": new_york.strftime("%H:%M:%S"),
-            "date": new_york.strftime("%A, %d %B %Y"),
-            "abbr": new_york.tzname(),
-            "offset": new_york.strftime("UTC%z"),
-        },
-        "sessions": sessions,
-    }
-
-
-@app.route("/")
-def home():
-    return render_template("index.html")
-
-
-@app.route("/api/sessions")
-def api_sessions():
-    return jsonify(session_payload())
-
-
-@app.route("/api/markets")
-def api_markets():
-    return jsonify(get_market_snapshot())
-
-
-@app.route("/health")
-def health():
-    return jsonify({"ok": True})
-
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8000"))
-    debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    app.run(host="0.0.0.0", port=port, debug=debug)
+    <script src="/static/app.js"></script>
+  </body>
+</html>
