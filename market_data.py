@@ -1,6 +1,0 @@
-Flask==2.2.5
-requests==2.31.0
-python-dotenv==0.21.1
-pytz==2024.1
-gunicorn==20.1.0
-setuptools==68.2.2
